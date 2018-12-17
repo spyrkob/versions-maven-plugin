@@ -103,8 +103,7 @@ public class DependencyUpdatesReport
     protected void doGenerateReport( Locale locale, Sink sink )
         throws MavenReportException
     {
-        Set<Dependency> dependencies = new TreeSet<>( new DependencyComparator() );
-        dependencies.addAll( getProject().getDependencies() );
+        Set<Dependency> dependencies = getDependencies();
 
         Set<Dependency> dependencyManagement = new TreeSet<>( new DependencyComparator() );
 
@@ -182,6 +181,12 @@ public class DependencyUpdatesReport
         {
             throw new MavenReportException( e.getMessage(), e );
         }
+    }
+
+    protected Set<Dependency> getDependencies() {
+        Set<Dependency> dependencies = new TreeSet<>( new DependencyComparator() );
+        dependencies.addAll( getProject().getDependencies() );
+        return dependencies;
     }
 
     /**

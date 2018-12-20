@@ -307,6 +307,7 @@ public class DefaultVersionsHelper
 
             ruleSet.setIgnoreVersions(loadedRules.getIgnoreVersions());
             ruleSet.setRules(loadedRules.getRules());
+            ruleSet.setComparisonMethod(loadedRules.getComparisonMethod());
         }
 
         return ruleSet;

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-@Mojo(aggregator = true, name="aggregate-dependency-updates-report", requiresDependencyResolution=ResolutionScope.RUNTIME)
+@Mojo(aggregator = true, name="aggregate-dependency-updates-report")
 public class AggregateDependencyUpdatesReport extends DependencyUpdatesReport {
 
     @Parameter( property = "reactorProjects", readonly = true )

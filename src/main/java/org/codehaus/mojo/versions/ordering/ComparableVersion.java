@@ -216,6 +216,7 @@ public class ComparableVersion
                     return comparableQualifier( value ).compareTo( comparableQualifier( ( (StringItem) item ).value ) );
 
                 case LIST_ITEM:
+                    if (this.value.equals("sp")) return 1;
                     return -1; // 1.any < 1-1
 
                 default:
@@ -331,6 +332,8 @@ public class ComparableVersion
 
     public final void parseVersion( String version )
     {
+        version = version.replace("-redhat","");
+        version = version.replace(".redhat","");
         this.value = version;
 
         items = new ListItem();
@@ -374,7 +377,7 @@ public class ComparableVersion
                 }
                 startIndex = i + 1;
 
-                if ( isDigit )
+                if ( isDigit && version.charAt(i+1) != 'r' )
                 {
                     list.normalize(); // 1.0-* = 1-*
 

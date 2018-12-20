@@ -187,6 +187,9 @@ public abstract class AbstractVersionsReport
     @Parameter( property = "allowSnapshots", defaultValue = "false" )
     protected boolean allowSnapshots;
 
+    @Parameter( property = "manifestFile" )
+    private String manifestFile;
+
     /**
      * Our versions helper.
      */
@@ -218,7 +221,7 @@ public abstract class AbstractVersionsReport
                 helper = new DefaultVersionsHelper( artifactFactory, artifactResolver, artifactMetadataSource,
                                                     remoteArtifactRepositories, remotePluginRepositories,
                                                     localRepository, wagonManager, settings, serverId, rulesUri,
-                                                    getLog(), session, pathTranslator );
+                                                    getLog(), session, pathTranslator, manifestFile );
             }
             catch ( MojoExecutionException e )
             {

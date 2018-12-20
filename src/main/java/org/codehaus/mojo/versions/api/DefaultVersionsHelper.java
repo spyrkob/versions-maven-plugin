@@ -175,6 +175,7 @@ public class DefaultVersionsHelper
      * @since 1.3
      */
     private final ArtifactResolver artifactResolver;
+    private final String manifestFile;
 
     /**
      * Constructs a new {@link DefaultVersionsHelper}.
@@ -199,7 +200,8 @@ public class DefaultVersionsHelper
                                   ArtifactMetadataSource artifactMetadataSource, List remoteArtifactRepositories,
                                   List remotePluginRepositories, ArtifactRepository localRepository,
                                   WagonManager wagonManager, Settings settings, String serverId, String rulesUri,
-                                  Log log, MavenSession mavenSession, PathTranslator pathTranslator )
+                                  Log log, MavenSession mavenSession, PathTranslator pathTranslator,
+                                  String manifestFile )
         throws MojoExecutionException
     {
         this.artifactFactory = artifactFactory;
@@ -212,6 +214,19 @@ public class DefaultVersionsHelper
         this.remoteArtifactRepositories = remoteArtifactRepositories;
         this.remotePluginRepositories = remotePluginRepositories;
         this.log = log;
+        this.manifestFile = manifestFile;
+    }
+
+    public DefaultVersionsHelper( ArtifactFactory artifactFactory, ArtifactResolver artifactResolver,
+                                  ArtifactMetadataSource artifactMetadataSource, List remoteArtifactRepositories,
+                                  List remotePluginRepositories, ArtifactRepository localRepository,
+                                  WagonManager wagonManager, Settings settings, String serverId, String rulesUri,
+                                  Log log, MavenSession mavenSession, PathTranslator pathTranslator)
+            throws MojoExecutionException
+    {
+        this(artifactFactory, artifactResolver, artifactMetadataSource, remoteArtifactRepositories,
+                remotePluginRepositories, localRepository, wagonManager, settings, serverId, rulesUri, log,
+                mavenSession, pathTranslator,null);
     }
 
     @Deprecated
@@ -428,9 +443,16 @@ public class DefaultVersionsHelper
     public ArtifactVersions lookupArtifactVersions( Artifact artifact, boolean usePluginRepositories )
         throws ArtifactMetadataRetrievalException
     {
-        List remoteRepositories = usePluginRepositories ? remotePluginRepositories : remoteArtifactRepositories;
-        final List<ArtifactVersion> versions =
-            artifactMetadataSource.retrieveAvailableVersions( artifact, localRepository, remoteRepositories );
+        String key = ArtifactUtils.versionlessKey(artifact.getGroupId(), artifact.getArtifactId());
+        final List<ArtifactVersion> versions;
+        if (versionsMap.containsKey(key)) {
+            versions = new ArrayList<>();
+            versions.addAll(versionsMap.get(key));
+        } else {
+            List remoteRepositories = usePluginRepositories ? remotePluginRepositories : remoteArtifactRepositories;
+            versions =
+                    artifactMetadataSource.retrieveAvailableVersions(artifact, localRepository, remoteRepositories);
+        }
         final List<IgnoreVersion> ignoredVersions = getIgnoredVersions( artifact );
         if ( !ignoredVersions.isEmpty() )
         {
@@ -709,6 +731,8 @@ public class DefaultVersionsHelper
         return artifactVersions;
     }
 
+    private HashMap<String, List<ArtifactVersion>> versionsMap;
+
     /**
      * {@inheritDoc}
      */
@@ -726,6 +750,32 @@ public class DefaultVersionsHelper
 
         final Map<Dependency, ArtifactVersions> dependencyUpdates =
             new TreeMap<Dependency, ArtifactVersions>( new DependencyComparator() );
+
+        {
+            versionsMap = new HashMap<>();
+
+            if (!org.apache.commons.lang.StringUtils.isEmpty(this.manifestFile)) {
+                try (BufferedReader br = new BufferedReader(new FileReader(this.manifestFile))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        String[] gavs = line.split(":");
+                        if (gavs.length < 3) {
+                            continue;
+                        }
+
+                        ArrayList<ArtifactVersion> res = new ArrayList<>();
+                        for (String v : gavs[2].split(";")) {
+                            res.add(new DefaultArtifactVersion(v));
+                        }
+                        versionsMap.put(gavs[0] + ":" + gavs[1], res);
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
         // Lookup details in parallel...
         final ExecutorService executor = Executors.newFixedThreadPool( LOOKUP_PARALLEL_THREADS );
